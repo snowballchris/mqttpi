@@ -1,0 +1,9 @@
+mqtt:
+  broker: homeassistant.local
+  port: 1883
+  username: mqtt-user
+  password: mqtt-password
+
+app:
+  default_url: http://ukeplan.local:5000
+

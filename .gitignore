@@ -38,6 +38,7 @@ htmlcov/
 logs/
 log/
 *.pid
+config.yaml
 
 # Environment and local config
 .env

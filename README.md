@@ -2,7 +2,14 @@ MQTT Pi Controller (Linux only)
 
 This app connects to an MQTT broker and exposes topics to control a Raspberry Pi's display and Chromium kiosk. It also publishes system stats and Home Assistant discovery entities. The application only runs on Linux (intended for Raspberry Pi OS/Debian).
 
-1) Configure (optional) via environment variables:
+1) Configure via YAML (recommended): copy the example and edit values
+
+```bash
+cp ./config.example.yaml ./config.yaml
+vi ./config.yaml
+```
+
+You can also set environment variables to override any value at runtime:
 
 - MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 - DEFAULT_URL
