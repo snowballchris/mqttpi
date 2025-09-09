@@ -5,5 +5,5 @@ mqtt:
   password: mqtt-password
 
 app:
-  default_url: http://ukeplan.local:5000
+  default_url: http://weekplan.local:5173
 
