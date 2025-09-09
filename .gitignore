@@ -1,0 +1,65 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Packaging / distribution
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+*.whl
+pip-wheel-metadata/
+
+# Test / coverage / tooling caches
+.coverage
+.coverage.*
+.cache/
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.pytype/
+.pyre/
+.ruff_cache/
+
+# Logs and runtime files
+*.log
+*.out
+*.err
+logs/
+log/
+*.pid
+
+# Environment and local config
+.env
+.env.*
+*.local
+.python-version
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+.fseventsd
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local tooling state
+__pypackages__/
+coverage.xml
+
+
