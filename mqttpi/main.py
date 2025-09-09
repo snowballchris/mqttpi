@@ -7,6 +7,7 @@ import signal
 import subprocess
 import threading
 import time
+import sys
 from typing import Optional
 
 import paho.mqtt.client as mqtt
@@ -18,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s %(me
 logger = logging.getLogger("mqttpi")
 
 
-IS_LINUX = platform.system() == "Linux"
+ 
 
 
 # Globals
@@ -29,14 +30,11 @@ current_brightness: float = 0.5
 
 
 def _set_display_env() -> None:
-    if IS_LINUX:
-        os.environ["DISPLAY"] = ":0"
+    os.environ["DISPLAY"] = ":0"
 
 
 def get_display_state() -> str:
     """Query the current display state using xset (Linux only)."""
-    if not IS_LINUX:
-        return "unknown"
     try:
         _set_display_env()
         output = subprocess.check_output("xset -q", shell=True).decode("utf-8")
@@ -48,8 +46,6 @@ def get_display_state() -> str:
 
 def get_memory_usage_percent() -> Optional[float]:
     """Calculate memory usage percentage (Linux: /proc/meminfo, otherwise None)."""
-    if not IS_LINUX:
-        return None
     try:
         meminfo = {}
         with open("/proc/meminfo") as f:
@@ -241,9 +237,6 @@ def on_message(_client: mqtt.Client, _userdata, msg):
     topic = msg.topic
     payload = msg.payload.decode("utf-8").strip()
     if topic == config.CMD_DISPLAY:
-        if not IS_LINUX:
-            logger.info("Display command ignored on non-Linux host: %s", payload)
-            return
         _set_display_env()
         if payload == "OFF":
             subprocess.call("xset dpms force off", shell=True)
@@ -263,9 +256,6 @@ def on_message(_client: mqtt.Client, _userdata, msg):
         logger.info("Restarting Raspberry Pi")
         restart_pi()
     elif topic == config.CMD_BRIGHTNESS:
-        if not IS_LINUX:
-            logger.info("Brightness command ignored on non-Linux host: %s", payload)
-            return
         try:
             brightness_val = float(payload)
             brightness_val = max(0, min(1, brightness_val))
@@ -280,11 +270,6 @@ def on_message(_client: mqtt.Client, _userdata, msg):
 
 def launch_chromium(url: str) -> None:
     global chromium_process, current_url
-    if not IS_LINUX:
-        logger.info("Chromium launch skipped on non-Linux host: %s", url)
-        current_url = url
-        client.publish(config.STATE_URL, current_url)
-        return
     if chromium_process:
         try:
             chromium_process.send_signal(signal.SIGTERM)
@@ -303,9 +288,6 @@ def launch_chromium(url: str) -> None:
 
 
 def refresh_chromium() -> None:
-    if not IS_LINUX:
-        logger.info("Refresh skipped on non-Linux host")
-        return
     try:
         window_id = (
             subprocess.check_output(
@@ -321,39 +303,22 @@ def refresh_chromium() -> None:
 
 
 def restart_pi() -> None:
-    if not IS_LINUX:
-        logger.info("Restart skipped on non-Linux host")
-        return
     logger.info("Restarting Raspberry Pi...")
     subprocess.call("sudo reboot", shell=True)
 
 
 def _get_ip_address() -> str:
-    # Linux path using ip/hostname -I
-    if IS_LINUX:
+    try:
+        ip_output = subprocess.check_output(
+            "ip -4 addr show wlan0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'",
+            shell=True,
+        )
+        return ip_output.decode().strip()
+    except subprocess.CalledProcessError:
         try:
-            ip_output = subprocess.check_output(
-                "ip -4 addr show wlan0 | grep -oP '(?<=inet\\s)\\d+(\\.\\d+){3}'",
-                shell=True,
-            )
-            return ip_output.decode().strip()
-        except subprocess.CalledProcessError:
-            try:
-                return subprocess.check_output("hostname -I", shell=True).decode().split()[0]
-            except Exception:
-                pass
-    # macOS path using ipconfig
-    else:
-        for iface in ("en0", "en1"):
-            try:
-                return (
-                    subprocess.check_output(["ipconfig", "getifaddr", iface])
-                    .decode()
-                    .strip()
-                )
-            except Exception:
-                continue
-    return "unknown"
+            return subprocess.check_output("hostname -I", shell=True).decode().split()[0]
+        except Exception:
+            return "unknown"
 
 
 def publish_system_stats() -> None:
@@ -365,12 +330,11 @@ def publish_system_stats() -> None:
     num_cores = os.cpu_count() or 1
     load_percent = (load1 / num_cores) * 100
     temp_c = 0.0
-    if IS_LINUX:
-        try:
-            with open("/sys/class/thermal/thermal_zone0/temp") as f:
-                temp_c = int(f.read().strip()) / 1000.0
-        except FileNotFoundError:
-            pass
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp") as f:
+            temp_c = int(f.read().strip()) / 1000.0
+    except FileNotFoundError:
+        pass
     ip_addr = _get_ip_address()
 
     mem_usage = get_memory_usage_percent() or 0
@@ -388,6 +352,9 @@ def publish_system_stats() -> None:
 
 
 def run() -> None:
+    if platform.system() != "Linux":
+        logger.error("This application only runs on Linux.")
+        sys.exit(1)
     global client
     client = mqtt.Client()
     client.username_pw_set(config.MQTT_USER, config.MQTT_PASSWORD)

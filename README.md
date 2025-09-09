@@ -1,30 +1,22 @@
-MQTT Pi Controller
+MQTT Pi Controller (Linux only)
 
-This app connects to an MQTT broker and exposes topics to control a Raspberry Pi's display and Chromium kiosk. It also publishes system stats and Home Assistant discovery entities.
-
-Quick start (macOS/Linux):
+This app connects to an MQTT broker and exposes topics to control a Raspberry Pi's display and Chromium kiosk. It also publishes system stats and Home Assistant discovery entities. The application only runs on Linux (intended for Raspberry Pi OS/Debian).
 
 1) Configure (optional) via environment variables:
 
 - MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASSWORD
 - DEFAULT_URL
 
-2) Run:
+2) Run (Linux only):
 
 ```bash
 chmod +x ./bin/mqttpi
 ./bin/mqttpi
 ```
 
-On macOS, display control and Chromium actions are no-ops; MQTT and stats still run. On Raspberry Pi (Linux), full functionality is enabled.
+Note: The application exits on non-Linux systems.
 
-Run as a service
-
-- macOS launchd: copy `services/mqttpi.plist` to `~/Library/LaunchAgents/`, adjust paths, then:
-
-```bash
-launchctl load -w ~/Library/LaunchAgents/mqttpi.plist
-```
+Run as a service (Linux)
 
 - Linux systemd: copy `services/mqttpi.service` to `/etc/systemd/system/`, adjust paths, then:
 
